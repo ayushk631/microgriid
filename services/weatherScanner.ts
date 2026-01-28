@@ -45,7 +45,7 @@ export const parseWeatherGraph = async (file: File): Promise<ScannedWeatherData>
 
   // --- FIX: Use a stable model name (gemini-1.5-flash) to avoid quota errors ---
   const response = await ai.models.generateContent({
-    model: 'gemini-1.5-flash', 
+   model: 'gemini-1.5-flash-latest', 
     contents: {
         parts: [imagePart, { text: prompt }]
     },
