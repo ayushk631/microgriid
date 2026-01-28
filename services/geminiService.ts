@@ -95,7 +95,7 @@ export const analyzeSimulation = async (result: SimulationResult, params: Simula
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash', // CHANGED: Switched to stable free model
+      model: 'gemini-1.5-flash-latest', // CHANGED: Switched to stable free model
       contents: prompt,
       config: {
         temperature: 0.3, 
