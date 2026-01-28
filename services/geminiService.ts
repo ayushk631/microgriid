@@ -101,7 +101,11 @@ export const analyzeSimulation = async (result: SimulationResult, params: Simula
         temperature: 0.3, 
       }
     });
-    let cleanText = response.text || "Diagnostic failed.";
+    
+    // --- FIX: Safely handle response.text whether it is a function or property ---
+    let cleanText = typeof response.text === 'function' ? response.text() : response.text;
+    
+    if (!cleanText) cleanText = "Diagnostic failed.";
     cleanText = cleanText.replace(/```html/g, '').replace(/```/g, '').trim();
     return cleanText;
   } catch (error) {
