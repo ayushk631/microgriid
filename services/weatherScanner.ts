@@ -43,9 +43,9 @@ export const parseWeatherGraph = async (file: File): Promise<ScannedWeatherData>
     Interpolate visually if specific hours are not labeled.
   `;
 
-  // --- FIX: Use a stable model name (gemini-2.0-flash) ---
+  // --- FIX: Use a stable model name (gemini-1.5-flash) to avoid quota errors ---
   const response = await ai.models.generateContent({
-    model: 'gemini-2.0-flash', 
+    model: 'gemini-1.5-flash', 
     contents: {
         parts: [imagePart, { text: prompt }]
     },
@@ -63,8 +63,8 @@ export const parseWeatherGraph = async (file: File): Promise<ScannedWeatherData>
     }
   });
 
-  // Handle response text safely
-  const responseText = response.text || (typeof response.text === 'function' ? response.text() : null);
+  // --- FIX: Safely extract text (handle function vs property) ---
+  const responseText = typeof response.text === 'function' ? response.text() : response.text;
 
   if (!responseText) throw new Error("No data returned from vision analysis.");
   
