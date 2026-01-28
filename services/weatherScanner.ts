@@ -25,8 +25,9 @@ const fileToGenerativePart = async (file: File): Promise<{ inlineData: { data: s
 };
 
 export const parseWeatherGraph = async (file: File): Promise<ScannedWeatherData> => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) throw new Error("API Key not found");
+  // --- FIX: Use Vite's environment variable syntax ---
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!apiKey) throw new Error("API Key not found. Check VITE_GEMINI_API_KEY in Vercel.");
   
   const ai = new GoogleGenAI({ apiKey });
   const imagePart = await fileToGenerativePart(file);
@@ -42,8 +43,9 @@ export const parseWeatherGraph = async (file: File): Promise<ScannedWeatherData>
     Interpolate visually if specific hours are not labeled.
   `;
 
+  // --- FIX: Use a stable model name (gemini-2.0-flash) ---
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-2.0-flash', 
     contents: {
         parts: [imagePart, { text: prompt }]
     },
@@ -61,9 +63,12 @@ export const parseWeatherGraph = async (file: File): Promise<ScannedWeatherData>
     }
   });
 
-  if (!response.text) throw new Error("No data returned from vision analysis.");
+  // Handle response text safely
+  const responseText = response.text || (typeof response.text === 'function' ? response.text() : null);
+
+  if (!responseText) throw new Error("No data returned from vision analysis.");
   
-  const data = JSON.parse(response.text);
+  const data = JSON.parse(responseText);
 
   // Validation to ensure strictly 24 items (Engine requirement)
   const validate = (arr: any[]) => {
