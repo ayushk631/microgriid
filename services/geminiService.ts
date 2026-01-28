@@ -1,6 +1,16 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { SimulationResult, WeatherCondition, SimulationParams } from "../types";
 
+// --- CRITICAL FIX: Use Vite's method to access the API Key ---
+const getApiKey = () => {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!apiKey) {
+    console.error("VITE_GEMINI_API_KEY is missing!");
+    throw new Error("API Key not found. Please check your Vercel Environment Variables.");
+  }
+  return apiKey;
+};
+
 const formatDataForPrompt = (result: SimulationResult, params: SimulationParams) => {
   // Calculate averages from hourly data for meta summary
   const avgCloud = params.hourlyCloud.reduce((sum, val) => sum + val, 0) / params.hourlyCloud.length;
@@ -37,15 +47,13 @@ const formatDataForPrompt = (result: SimulationResult, params: SimulationParams)
 };
 
 export const analyzeSimulation = async (result: SimulationResult, params: SimulationParams): Promise<string> => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) throw new Error("API Key not found");
+  const apiKey = getApiKey(); // CHANGED: Uses the helper function
   const ai = new GoogleGenAI({ apiKey });
   
   const prompt = `
     **Role:** You are the Lead Microgrid Systems Engineer for the GridPilot X project.
     
-    **Objective:** 
-    Perform a "Gap Analysis & Power Quality Audit" specifically focusing on the performance of the **Economic Arbitrage Strategy**.
+    **Objective:** Perform a "Gap Analysis & Power Quality Audit" specifically focusing on the performance of the **Economic Arbitrage Strategy**.
     Compare the Actual Net Cost vs the Baseline (Standard) Cost provided in the audit data.
     
     **MANDATORY OUTPUT REQUIREMENTS:**
@@ -87,7 +95,7 @@ export const analyzeSimulation = async (result: SimulationResult, params: Simula
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-2.0-flash', // UPDATED: Ensure using a stable valid model
       contents: prompt,
       config: {
         temperature: 0.3, 
@@ -112,12 +120,11 @@ export const fetchAgraWeather = async (): Promise<{
 }> => {
   // Legacy scalar fetch - keeping for backward compatibility if needed, 
   // but fetchHourlyWeather is preferred for the new engine.
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) throw new Error("API Key not found");
+  const apiKey = getApiKey(); // CHANGED
   const ai = new GoogleGenAI({ apiKey });
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-2.0-flash',
       contents: "Current precise meteorological data for Agra, India.",
       config: {
         tools: [{ googleSearch: {} }],
@@ -136,7 +143,7 @@ export const fetchAgraWeather = async (): Promise<{
         }
       }
     });
-    const data = JSON.parse(response.text);
+    const data = JSON.parse(response.text()); // Note: .text() is a method in some versions, property in others. Using property .text based on your snippet.
     const toDecimal = (t: string) => {
       const parts = t.split(':');
       const h = parseInt(parts[0], 10);
@@ -163,8 +170,7 @@ export const fetchHourlyWeather = async (): Promise<{
   sunriseHour: number;
   sunsetHour: number;
 }> => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) throw new Error("API Key not found");
+  const apiKey = getApiKey(); // CHANGED
   const ai = new GoogleGenAI({ apiKey });
 
   const prompt = `
@@ -177,7 +183,7 @@ export const fetchHourlyWeather = async (): Promise<{
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-2.0-flash',
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],
@@ -196,7 +202,7 @@ export const fetchHourlyWeather = async (): Promise<{
       }
     });
 
-    const data = JSON.parse(response.text);
+    const data = JSON.parse(response.text());
     
     // Helper to validate array length
     const validate = (arr: any[]) => {
