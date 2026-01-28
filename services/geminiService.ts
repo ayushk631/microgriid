@@ -47,7 +47,7 @@ const formatDataForPrompt = (result: SimulationResult, params: SimulationParams)
 };
 
 export const analyzeSimulation = async (result: SimulationResult, params: SimulationParams): Promise<string> => {
-  const apiKey = getApiKey(); // CHANGED: Uses the helper function
+  const apiKey = getApiKey(); 
   const ai = new GoogleGenAI({ apiKey });
   
   const prompt = `
@@ -95,14 +95,14 @@ export const analyzeSimulation = async (result: SimulationResult, params: Simula
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash', // UPDATED: Ensure using a stable valid model
+      model: 'gemini-1.5-flash', // CHANGED: Switched to stable free model
       contents: prompt,
       config: {
         temperature: 0.3, 
       }
     });
     
-    // --- FIX: Safely handle response.text whether it is a function or property ---
+    // SAFE TEXT EXTRACTION
     let cleanText = typeof response.text === 'function' ? response.text() : response.text;
     
     if (!cleanText) cleanText = "Diagnostic failed.";
@@ -122,13 +122,11 @@ export const fetchAgraWeather = async (): Promise<{
   cloudCoverPercent: number;
   humidityPercent: number;
 }> => {
-  // Legacy scalar fetch - keeping for backward compatibility if needed, 
-  // but fetchHourlyWeather is preferred for the new engine.
-  const apiKey = getApiKey(); // CHANGED
+  const apiKey = getApiKey(); 
   const ai = new GoogleGenAI({ apiKey });
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-1.5-flash', // CHANGED: Switched to stable free model
       contents: "Current precise meteorological data for Agra, India.",
       config: {
         tools: [{ googleSearch: {} }],
@@ -147,7 +145,12 @@ export const fetchAgraWeather = async (): Promise<{
         }
       }
     });
-    const data = JSON.parse(response.text()); // Note: .text() is a method in some versions, property in others. Using property .text based on your snippet.
+    
+    // SAFE TEXT EXTRACTION
+    const jsonString = typeof response.text === 'function' ? response.text() : response.text;
+    if (!jsonString) throw new Error("Empty response from AI");
+    
+    const data = JSON.parse(jsonString);
     const toDecimal = (t: string) => {
       const parts = t.split(':');
       const h = parseInt(parts[0], 10);
@@ -174,7 +177,7 @@ export const fetchHourlyWeather = async (): Promise<{
   sunriseHour: number;
   sunsetHour: number;
 }> => {
-  const apiKey = getApiKey(); // CHANGED
+  const apiKey = getApiKey(); 
   const ai = new GoogleGenAI({ apiKey });
 
   const prompt = `
@@ -187,7 +190,7 @@ export const fetchHourlyWeather = async (): Promise<{
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-1.5-flash', // CHANGED: Switched to stable free model
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],
@@ -206,7 +209,11 @@ export const fetchHourlyWeather = async (): Promise<{
       }
     });
 
-    const data = JSON.parse(response.text());
+    // SAFE TEXT EXTRACTION
+    const jsonString = typeof response.text === 'function' ? response.text() : response.text;
+    if (!jsonString) throw new Error("Empty response from AI");
+
+    const data = JSON.parse(jsonString);
     
     // Helper to validate array length
     const validate = (arr: any[]) => {
